@@ -1,46 +1,98 @@
-use anyhow::{anyhow, Result};
+use crate::window::Window;
+use anyhow::Result;
+use std::collections::HashMap;
+use winit::{event as We, event_loop as Wl, window as Ww};
 
-pub struct App {
-    pub window: winit::window::Window,
-    pub surface: wgpu::Surface,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
+pub type LoopTarget = Wl::EventLoopWindowTarget<()>;
+
+pub trait App {
+    type Window: Window;
+    fn event_loop_init(&mut self, _event_loop: &LoopTarget) -> Result<Option<Wl::ControlFlow>> {
+        Ok(None)
+    }
+    fn create_first_window(&mut self, event_loop: &LoopTarget) -> Result<Self::Window>;
 }
 
-impl App {
-    pub fn new(event_loop: &winit::event_loop::EventLoop<()>) -> Result<App> {
-        use pollster::block_on;
-
-        let window = winit::window::Window::new(event_loop)?;
-
-        // Create a wgpu device that can render to that window.
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::util::backend_bits_from_env()
-                .unwrap_or(wgpu::Backends::all()),
-            dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env()
-                .unwrap_or_default(),
-        });
-        let surface = unsafe { instance.create_surface(&window) }?;
-        let adapter = block_on(wgpu::util::initialize_adapter_from_env_or_default(
-            &instance,
-            Some(&surface),
-        ))
-        .ok_or(anyhow!("failed to create wgpu adapter"))?;
-        let (device, queue) = block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("play-wgpu device"),
-                ..wgpu::DeviceDescriptor::default()
-            },
-            None,
-        ))?;
-
-        let app = App {
-            window,
-            surface,
-            device,
-            queue,
+pub fn run<A>(mut app: A) -> !
+where
+    A: App + 'static,
+{
+    let mut windows: HashMap<Ww::WindowId, A::Window> = HashMap::new();
+    Wl::EventLoop::new().run(move |event, target, control_flow| {
+        log::trace!("event loop: {:#?}", event);
+        *control_flow = Wl::ControlFlow::Poll;
+        let result = match event {
+            We::Event::NewEvents(We::StartCause::Init) => {
+                app.event_loop_init(target)
+            }
+            We::Event::WindowEvent { window_id, event } => {
+                let window = windows
+                    .get_mut(&window_id)
+                    .expect("received event for missing window");
+                match event {
+                    We::WindowEvent::Resized(size) => window.resized(target, size),
+                    We::WindowEvent::CloseRequested => window.close_requested(target),
+                    We::WindowEvent::Destroyed => {
+                        let window = windows.remove(&window_id).unwrap();
+                        window.destroyed(target)
+                    }
+                    We::WindowEvent::ReceivedCharacter(ch) => window.received_character(target, ch),
+                    We::WindowEvent::KeyboardInput {
+                        device_id,
+                        input,
+                        is_synthetic,
+                    } => window.keyboard_input(target, device_id, input, is_synthetic),
+                    We::WindowEvent::ModifiersChanged(modifiers) => {
+                        window.modifiers_changed(target, modifiers)
+                    }
+                    #[allow(deprecated)]
+                    We::WindowEvent::CursorMoved {
+                        device_id,
+                        position,
+                        modifiers: _,
+                    } => window.cursor_moved(target, device_id, position),
+                    _ => Ok(None),
+                }
+            }
+            We::Event::Resumed => {
+                if windows.is_empty() {
+                    match app.create_first_window(target) {
+                        Ok(window) => {
+                            let id = window.id();
+                            let prior = windows.insert(id, window);
+                            assert!(prior.is_none(), "New window has same id as extant window");
+                            Ok(None)
+                        }
+                        Err(err) => Err(err),
+                    }
+                } else {
+                    Ok(None)
+                }
+            }
+            We::Event::RedrawRequested(window_id) => {
+                let window = windows
+                    .get_mut(&window_id)
+                    .expect("received event for missing window");
+                window.redraw(target)
+            }
+            We::Event::LoopDestroyed => {
+                for (_, window) in windows.drain() {
+                    let _ = window.destroyed(target);
+                }
+                Ok(None)
+            }
+            _ => Ok(None),
         };
 
-        Ok(app)
-    }
+        match result {
+            Ok(Some(cf)) => {
+                *control_flow = cf;
+            }
+            Ok(None) => {}
+            Err(err) => {
+                eprintln!("{}", err);
+                *control_flow = Wl::ControlFlow::ExitWithCode(1);
+            }
+        }
+    });
 }

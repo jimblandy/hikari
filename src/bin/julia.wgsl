@@ -26,7 +26,23 @@ fn julia_vertex(@builtin(vertex_index) index: u32) -> Vertex {
 
 @fragment
 fn julia_fragment(vertex: Vertex) -> @location(0) vec4<f32> {
-   let d = length(inputs.mouse.xy - vertex.complex);
-   let c = select(0.0, 1.0, d < 0.1);
-   return vec4(c, c, c, 1.0);
+   let c = inputs.mouse.xy;
+   var z = vertex.complex;
+   var i: i32;
+   for (i = 0; i < 20; i++) {
+       let r = z.x * z.x - z.y * z.y;
+       z.y = 2.0 * z.x * z.y;
+       z.x = r;
+       z += c;
+       if z.x * z.x + z.y * z.y > 4.0 {
+          break;
+       }
+   }
+
+   if i == 20 {
+       return vec4(1.0, 1.0, 1.0, 1.0);
+   } else {
+       let b = f32(i) / 20.0;
+       return vec4(b, b, b, 1.0);
+   }
 }

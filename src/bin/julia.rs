@@ -53,6 +53,7 @@ impl Uniform {
         } else {
             glam::Vec2 { x: 1.0, y: size.y / size.x }
         };
+        let clip_to_plane_scale = clip_to_plane_scale * 2.0;
 
         let mouse_clip = (mouse / size - 0.5) * glam::Vec2 { x: 2.0, y: -2.0 };
         let mouse_plane = mouse_clip * clip_to_plane_scale;

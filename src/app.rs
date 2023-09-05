@@ -17,14 +17,16 @@ pub fn run<A>(mut app: A) -> !
 where
     A: App + 'static,
 {
+    // This doesn't make sense. Surely the app wants to be able to
+    // create new windows dynamically; how can it do so and register
+    // them with the event loop? And surely the app wants access to
+    // its own table of windows.
     let mut windows: HashMap<Ww::WindowId, A::Window> = HashMap::new();
     Wl::EventLoop::new().run(move |event, target, control_flow| {
         log::trace!("event loop: {:#?}", event);
         *control_flow = Wl::ControlFlow::Poll;
         let result = match event {
-            We::Event::NewEvents(We::StartCause::Init) => {
-                app.event_loop_init(target)
-            }
+            We::Event::NewEvents(We::StartCause::Init) => app.event_loop_init(target),
             We::Event::WindowEvent { window_id, event } => {
                 let window = windows
                     .get_mut(&window_id)

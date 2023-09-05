@@ -1,6 +1,9 @@
 use anyhow::{anyhow, Result};
 use winit::window as Ww;
 
+// This doesn't really make sense, because you'd like to share your
+// wgpu device/adapter across many surfaces. And you'd like the app to
+// define its own window state type, with shared application state.
 pub struct Window {
     pub winit_window: Ww::Window,
     pub instance: wgpu::Instance,

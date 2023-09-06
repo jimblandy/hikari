@@ -81,11 +81,12 @@ impl Window {
 
         // Create the winit window.
         let winit_window = winit::window::WindowBuilder::new()
+            .with_title("Julia set")
             .with_inner_size(Wd::LogicalSize {
-                width: 800,
-                height: 450,
+                width: 1200,
+                height: 675,
             })
-            .with_position(Wd::LogicalPosition { x: 100, y: 100 })
+            .with_position(Wd::LogicalPosition { x: 50, y: 50 })
             .build(event_loop)?;
 
         // Create the wgpu Device.

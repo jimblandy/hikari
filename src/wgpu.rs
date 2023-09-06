@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use winit::window as Ww;
+use winit::{dpi as Wd, window as Ww};
 
 // This doesn't really make sense, because you'd like to share your
 // wgpu device/adapter across many surfaces. And you'd like the app to
@@ -64,5 +64,14 @@ impl Window {
             device,
             queue,
         })
+    }
+
+    pub fn resize(&mut self,
+                  size: Wd::PhysicalSize<u32>)
+    {
+        self.surface_configuration.width = size.width;
+        self.surface_configuration.height = size.height;
+        self.surface.configure(&self.device, &self.surface_configuration);
+        self.winit_window.request_redraw();
     }
 }

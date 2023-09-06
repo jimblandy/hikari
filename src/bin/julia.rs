@@ -279,7 +279,7 @@ impl wgpu_hikari::window::Window for Window {
     ) -> Result<Option<Wl::ControlFlow>> {
         log::trace!("resized: {:?}", size);
         self.window_size = size;
-        self.wgpu.winit_window.request_redraw();
+        self.wgpu.resize(size);
         Ok(None)
     }
 }

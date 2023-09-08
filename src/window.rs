@@ -21,6 +21,12 @@ pub trait Window: Sized {
         Ok(None)
     }
 
+    fn touch(&mut self,
+             event_loop: &LoopTarget,
+             touch: We::Touch) -> Result<Option<Wl::ControlFlow>> {
+        Ok(None)
+    }
+
     fn modifiers_changed(
         &mut self,
         event_loop: &LoopTarget,

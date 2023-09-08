@@ -208,6 +208,13 @@ impl wgpu_hikari::window::Window for Window {
         Ok(None)
     }
 
+    fn touch(&mut self, event_loop: &app::LoopTarget, touch: We::Touch) -> Result<Option<Wl::ControlFlow>> {
+        log::trace!("touch");
+        self.mouse = touch.location;
+        self.wgpu.winit_window.request_redraw();
+        Ok(None)
+    }
+
     fn redraw(&mut self, event_loop: &app::LoopTarget) -> Result<Option<Wl::ControlFlow>> {
         use pollster::block_on;
 

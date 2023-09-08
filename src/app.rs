@@ -53,6 +53,7 @@ where
                         position,
                         modifiers: _,
                     } => window.cursor_moved(target, device_id, position),
+                    We::WindowEvent::Touch(touch) => window.touch(target, touch),
                     _ => Ok(None),
                 }
             }

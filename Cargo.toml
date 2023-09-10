@@ -12,8 +12,8 @@ winit = "0.28"
 pollster = "0.3"
 
 [dependencies.wgpu]
-git = "https://github.com/gfx-rs/wgpu"
-rev = "d17165f"
+git = "https://github.com/jimblandy/wgpu"
+rev = "bf1a667b"
 
 [dependencies.encase]
 version = "0.6"

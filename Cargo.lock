@@ -607,6 +607,16 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "indexmap"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
+dependencies = [
+ "autocfg",
+ "hashbrown 0.12.3",
+]
+
+[[package]]
+name = "indexmap"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
@@ -806,13 +816,13 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "0.13.0"
-source = "git+https://github.com/gfx-rs/naga?rev=7a19f3af909202c7eafd36633b5584bfbb353ecb#7a19f3af909202c7eafd36633b5584bfbb353ecb"
+source = "git+https://github.com/gfx-rs/naga?rev=f06520f9#f06520f9e2acb40126f40a0c2af963a1d5f6a834"
 dependencies = [
  "bit-set",
  "bitflags 2.4.0",
  "codespan-reporting",
  "hexf-parse",
- "indexmap",
+ "indexmap 1.9.3",
  "log",
  "num-traits",
  "rustc-hash",
@@ -1365,7 +1375,7 @@ version = "0.19.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8123f27e969974a3dfba720fdb560be359f57b44302d280ba72e76a74480e8a"
 dependencies = [
- "indexmap",
+ "indexmap 2.0.0",
  "toml_datetime",
  "winnow",
 ]
@@ -1564,7 +1574,7 @@ dependencies = [
 [[package]]
 name = "wgpu"
 version = "0.17.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=d17165f#d17165f08b46628360b2400975ea2770c40826a1"
+source = "git+https://github.com/jimblandy/wgpu?rev=bf1a667b#bf1a667bf7abc64152b4d75f3bab60446f4e8540"
 dependencies = [
  "arrayvec",
  "cfg-if",
@@ -1587,7 +1597,7 @@ dependencies = [
 [[package]]
 name = "wgpu-core"
 version = "0.17.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=d17165f#d17165f08b46628360b2400975ea2770c40826a1"
+source = "git+https://github.com/jimblandy/wgpu?rev=bf1a667b#bf1a667bf7abc64152b4d75f3bab60446f4e8540"
 dependencies = [
  "arrayvec",
  "bit-vec",
@@ -1609,7 +1619,7 @@ dependencies = [
 [[package]]
 name = "wgpu-hal"
 version = "0.17.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=d17165f#d17165f08b46628360b2400975ea2770c40826a1"
+source = "git+https://github.com/jimblandy/wgpu?rev=bf1a667b#bf1a667bf7abc64152b4d75f3bab60446f4e8540"
 dependencies = [
  "android_system_properties",
  "arrayvec",
@@ -1663,7 +1673,7 @@ dependencies = [
 [[package]]
 name = "wgpu-types"
 version = "0.17.0"
-source = "git+https://github.com/gfx-rs/wgpu?rev=d17165f#d17165f08b46628360b2400975ea2770c40826a1"
+source = "git+https://github.com/jimblandy/wgpu?rev=bf1a667b#bf1a667bf7abc64152b4d75f3bab60446f4e8540"
 dependencies = [
  "bitflags 2.4.0",
  "js-sys",

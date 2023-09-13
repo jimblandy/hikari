@@ -24,25 +24,47 @@ fn julia_vertex(@builtin(vertex_index) index: u32) -> Vertex {
    return Vertex(fragment, complex);
 }
 
-@fragment
-fn julia_fragment(vertex: Vertex) -> @location(0) vec4<f32> {
-   let c = inputs.mouse.xy;
-   var z = vertex.complex;
+alias Complex = vec2<f32>;
+alias Color = vec4<f32>;
+const BLACK: Color = vec2(0.0, 1.0).xxxy;
+const WHITE: Color = vec4(1.0);
+
+const LIMIT: i32 = 40;
+
+fn mult(a: Complex, b: Complex) -> Complex {
+   return Complex(
+       a.x * b.x - a.y * b.y,
+       2.0 * a.x * b.y
+   );
+}
+
+fn iterate(z_: Complex, c: Complex) -> i32 {
+   var z = z_;
    var i: i32;
-   for (i = 0; i < 20; i++) {
-       let r = z.x * z.x - z.y * z.y;
-       z.y = 2.0 * z.x * z.y;
-       z.x = r;
-       z += c;
-       if z.x * z.x + z.y * z.y > 4.0 {
+   for (i = 0; i < LIMIT; i++) {
+       z = mult(z, z) + c;
+       if dot(z, z) > 4.0 {
           break;
        }
    }
 
-   if i == 20 {
-       return vec4(1.0, 1.0, 1.0, 1.0);
-   } else {
-       let b = f32(i) / 20.0;
-       return vec4(b, b, b, 1.0);
-   }
+   return i;
+}
+
+fn iterations_to_color(iterations: i32) -> Color {
+    return mix(BLACK, WHITE, min(1.0, f32(iterations) / f32(LIMIT)));
+}
+
+@fragment
+fn julia_fragment(vertex: Vertex) -> @location(0) vec4<f32> {
+   let c = inputs.mouse.xy;
+   var z = vertex.complex;
+
+   // Compute Julia set color.
+   let j = iterations_to_color(iterate(vertex.complex, inputs.mouse.xy));
+
+   // Compute Mandelbrot set color.
+   let m = iterations_to_color(iterate(Complex(0.0), vertex.complex));
+
+   return mix(j, m, 0.1);
 }

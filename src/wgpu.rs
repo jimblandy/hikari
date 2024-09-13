@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 use winit::{dpi as Wd, window as Ww};
 
@@ -5,9 +7,9 @@ use winit::{dpi as Wd, window as Ww};
 // wgpu device/adapter across many surfaces. And you'd like the app to
 // define its own window state type, with shared application state.
 pub struct Window {
-    pub winit_window: Ww::Window,
+    pub winit_window: Arc<Ww::Window>,
     pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface,
+    pub surface: wgpu::Surface<'static>,
     pub surface_capabilities: wgpu::SurfaceCapabilities,
     pub surface_configuration: wgpu::SurfaceConfiguration,
     pub adapter: wgpu::Adapter,
@@ -20,13 +22,16 @@ impl Window {
     pub fn new(winit_window: Ww::Window) -> Result<Window> {
         use pollster::block_on;
 
+        let winit_window = Arc::new(winit_window);
+
         // Create a wgpu device that can render to that window.
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::util::backend_bits_from_env().unwrap_or(wgpu::Backends::all()),
             dx12_shader_compiler: wgpu::util::dx12_shader_compiler_from_env().unwrap_or_default(),
             gles_minor_version: wgpu::Gles3MinorVersion::default(),
+            ..wgpu::InstanceDescriptor::default()
         });
-        let surface = unsafe { instance.create_surface(&winit_window) }?;
+        let surface = instance.create_surface(winit_window.clone())?;
         let adapter = block_on(wgpu::util::initialize_adapter_from_env_or_default(
             &instance,
             Some(&surface),
@@ -43,15 +48,7 @@ impl Window {
 
         let surface_capabilities = surface.get_capabilities(&adapter);
         let size = winit_window.inner_size();
-        let surface_configuration = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_capabilities.formats[0],
-            width: size.width,
-            height: size.height,
-            present_mode: wgpu::PresentMode::default(),
-            alpha_mode: surface_capabilities.alpha_modes[0],
-            view_formats: vec![],
-        };
+        let surface_configuration = surface.get_default_config(&adapter, size.width, size.height).unwrap();
         surface.configure(&device, &surface_configuration);
 
         Ok(Window {
@@ -66,12 +63,11 @@ impl Window {
         })
     }
 
-    pub fn resize(&mut self,
-                  size: Wd::PhysicalSize<u32>)
-    {
+    pub fn resize(&mut self, size: Wd::PhysicalSize<u32>) {
         self.surface_configuration.width = size.width;
         self.surface_configuration.height = size.height;
-        self.surface.configure(&self.device, &self.surface_configuration);
+        self.surface
+            .configure(&self.device, &self.surface_configuration);
         self.winit_window.request_redraw();
     }
 }

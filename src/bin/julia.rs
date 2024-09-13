@@ -5,15 +5,15 @@ use winit::{dpi as Wd, event as We, event_loop as Wl};
 
 struct App;
 
-fn main() {
+fn main() -> Result<()> {
     env_logger::init();
-    app::run(App);
+    app::run(App)
 }
 
 impl app::App for App {
     type Window = Window;
 
-    fn create_first_window(&mut self, event_loop: &app::LoopTarget) -> Result<Self::Window> {
+    fn create_first_window(&mut self, event_loop: &Wl::ActiveEventLoop) -> Result<Self::Window> {
         log::trace!("create_first_window");
         Window::new(event_loop)
     }
@@ -40,18 +40,29 @@ impl Uniform {
     ///
     /// Return a `Uniform` value initialized according to its
     /// documentation.
-    fn new(mouse: Wd::PhysicalPosition<f64>,
-           window_size: Wd::PhysicalSize<u32>) -> Self {
-        let size = glam::Vec2 { x: window_size.width as f32, y: window_size.height as f32 };
-        let mouse = glam::Vec2 { x: mouse.x as f32, y: mouse.y as f32 };
+    fn new(mouse: Wd::PhysicalPosition<f64>, window_size: Wd::PhysicalSize<u32>) -> Self {
+        let size = glam::Vec2 {
+            x: window_size.width as f32,
+            y: window_size.height as f32,
+        };
+        let mouse = glam::Vec2 {
+            x: mouse.x as f32,
+            y: mouse.y as f32,
+        };
 
         // We want the plane unit square (i.e., of diameter 2) centered on the
         // origin to always sit in the middle of the window with its aspect
         // ratio preserved. We assume pixels are square.
         let clip_to_plane_scale = if size.x >= size.y {
-            glam::Vec2 { x: size.x / size.y, y: 1.0 }
+            glam::Vec2 {
+                x: size.x / size.y,
+                y: 1.0,
+            }
         } else {
-            glam::Vec2 { x: 1.0, y: size.y / size.x }
+            glam::Vec2 {
+                x: 1.0,
+                y: size.y / size.x,
+            }
         };
         let clip_to_plane_scale = clip_to_plane_scale * 2.0;
 
@@ -76,18 +87,18 @@ struct Window {
 }
 
 impl Window {
-    fn new(event_loop: &app::LoopTarget) -> Result<Window> {
+    fn new(event_loop: &Wl::ActiveEventLoop) -> Result<Window> {
         use pollster::block_on;
 
         // Create the winit window.
-        let winit_window = winit::window::WindowBuilder::new()
+        let attributes = winit::window::Window::default_attributes()
             .with_title("Julia set")
             .with_inner_size(Wd::LogicalSize {
                 width: 1200,
                 height: 675,
             })
-            .with_position(Wd::LogicalPosition { x: 50, y: 50 })
-            .build(event_loop)?;
+            .with_position(Wd::LogicalPosition { x: 50, y: 50 });
+        let winit_window = event_loop.create_window(attributes)?;
 
         // Create the wgpu Device.
         let wgpu = wgpu_hikari::wgpu::Window::new(winit_window)?;
@@ -115,6 +126,7 @@ impl Window {
                     module: &shader_module,
                     entry_point: "julia_vertex",
                     buffers: &[], // We generate vertex positions from the instance index.
+                    compilation_options: <_>::default(),
                 },
                 primitive: wgpu::PrimitiveState {
                     topology: wgpu::PrimitiveTopology::TriangleStrip,
@@ -130,8 +142,10 @@ impl Window {
                         blend: None,
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
+                    compilation_options: <_>::default(),
                 }),
                 multiview: None,
+                cache: None,
             });
 
         // Create the uniform buffer.
@@ -143,21 +157,7 @@ impl Window {
         });
 
         // Create the bindgroup.
-        let layout = wgpu
-            .device
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Julia bindgroup layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: Some(Uniform::min_size()),
-                    },
-                    count: None,
-                }],
-            });
+        let layout = pipeline.get_bind_group_layout(0);
         let bindgroup = wgpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Julia bindgroup"),
             layout: &layout,
@@ -179,7 +179,7 @@ impl Window {
             width: wgpu.surface_configuration.width,
             height: wgpu.surface_configuration.height,
         };
-        
+
         Ok(Window {
             wgpu,
             buffer,
@@ -199,23 +199,25 @@ impl wgpu_hikari::window::Window for Window {
 
     fn cursor_moved(
         &mut self,
-        event_loop: &app::LoopTarget,
+        event_loop: &Wl::ActiveEventLoop,
         device_id: We::DeviceId,
         position: Wd::PhysicalPosition<f64>,
-    ) -> Result<Option<Wl::ControlFlow>> {
+    ) {
         self.mouse = position;
         self.wgpu.winit_window.request_redraw();
-        Ok(None)
     }
 
-    fn touch(&mut self, event_loop: &app::LoopTarget, touch: We::Touch) -> Result<Option<Wl::ControlFlow>> {
+    fn touch(
+        &mut self,
+        event_loop: &Wl::ActiveEventLoop,
+        touch: We::Touch,
+    ) {
         log::trace!("touch");
         self.mouse = touch.location;
         self.wgpu.winit_window.request_redraw();
-        Ok(None)
     }
 
-    fn redraw(&mut self, event_loop: &app::LoopTarget) -> Result<Option<Wl::ControlFlow>> {
+    fn redraw(&mut self, event_loop: &Wl::ActiveEventLoop) -> Result<()> {
         use pollster::block_on;
 
         log::trace!("redraw");
@@ -259,7 +261,7 @@ impl wgpu_hikari::window::Window for Window {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 ..wgpu::RenderPassDescriptor::default()
@@ -277,17 +279,16 @@ impl wgpu_hikari::window::Window for Window {
             bail!("{}", err);
         }
 
-        Ok(None)
+        Ok(())
     }
 
     fn resized(
         &mut self,
-        _event_loop: &app::LoopTarget,
+        _event_loop: &Wl::ActiveEventLoop,
         size: Wd::PhysicalSize<u32>,
-    ) -> Result<Option<Wl::ControlFlow>> {
+    ) {
         log::trace!("resized: {:?}", size);
         self.window_size = size;
         self.wgpu.resize(size);
-        Ok(None)
     }
 }

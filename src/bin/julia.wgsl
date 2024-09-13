@@ -29,7 +29,7 @@ alias Color = vec4<f32>;
 const BLACK: Color = vec2(0.0, 1.0).xxxy;
 const WHITE: Color = vec4(1.0);
 
-const LIMIT: i32 = 40;
+const LIMIT: i32 = 80;
 
 fn mult(a: Complex, b: Complex) -> Complex {
    return Complex(
@@ -64,7 +64,8 @@ fn julia_fragment(vertex: Vertex) -> @location(0) vec4<f32> {
    let j = iterations_to_color(iterate(vertex.complex, inputs.mouse.xy));
 
    // Compute Mandelbrot set color.
-   let m = iterations_to_color(iterate(Complex(0.0), vertex.complex));
+   //let m = iterations_to_color(iterate(Complex(0.0), vertex.complex));
+   let m = iterations_to_color(0);
 
    return mix(j, m, 0.1);
 }

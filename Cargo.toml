@@ -8,12 +8,14 @@ anyhow = "1.0"
 env_logger = "0.10"
 glam = "0.24"
 log = "0.4"
-winit = "0.28"
 pollster = "0.3"
 
 [dependencies.wgpu]
-git = "https://github.com/jimblandy/wgpu"
-rev = "bf1a667b"
+version = "22"
+
+[dependencies.winit]
+version = "0.30"
+features = ["rwh_06"]
 
 [dependencies.encase]
 version = "0.6"
